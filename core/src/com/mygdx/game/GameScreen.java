@@ -2,6 +2,8 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -14,17 +16,26 @@ import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.math.Rectangle;
 import java.util.Iterator;
 
-public class MyFirstGdxGame extends ApplicationAdapter {
+public class GameScreen implements Screen {
+	final Drop game;
+	private OrthographicCamera camera;
+
 	private Texture dropImage;
 	private Texture bucketImage;
-	private OrthographicCamera camera;
-	private SpriteBatch batch;
+
 	private Rectangle bucket;
-	private long lastDropTime;
 	private Array<Rectangle> raindrops;
-	
-	@Override
-	public void create () {
+
+	private long lastDropTime;
+	private long startTime;
+
+	private int dropsGathered = 0;
+	private int health = 3;
+
+	public GameScreen(Drop game, long startTime) {
+		this.game = game;
+		this.startTime = startTime;
+
 		// load the images from assets, 64x64 pixels size
 		dropImage = new Texture(Gdx.files.internal("raindrop.png"));
 		bucketImage = new Texture(Gdx.files.internal("bucket.png"));
@@ -32,7 +43,6 @@ public class MyFirstGdxGame extends ApplicationAdapter {
 		// create the camera and SpriteBatch(provide easy work with 2d graphics)
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 480);
-		batch = new SpriteBatch();
 
 		// create the rectangle for bucket
 		bucket = new Rectangle();
@@ -57,7 +67,7 @@ public class MyFirstGdxGame extends ApplicationAdapter {
 	}
 
 	@Override
-	public void render() {
+	public void render(float delta) {
 		// clear the screen with color (red, green, blue, alpha)
 		ScreenUtils.clear(0, 0, .2f, 1); // dark blue color
 
@@ -65,23 +75,31 @@ public class MyFirstGdxGame extends ApplicationAdapter {
 		camera.update();
 
 		// tell the SpriteBatch to render in coordinate system specified by camera
-		batch.setProjectionMatrix(camera.combined);
+		game.batch.setProjectionMatrix(camera.combined);
 
 		// begin the new batch and draw bucket and all drops
-		batch.begin();
-		batch.draw(bucketImage, bucket.x, bucket.y);
+		game.batch.begin();
+		game.batch.draw(bucketImage, bucket.x, bucket.y);
+		game.font.draw(game.batch, "Drops collected: " + dropsGathered, 50, 460);
+		game.font.draw(game.batch, "Health: " + health, 50, 440);
 		for(Rectangle raindrop: raindrops){
-			batch.draw(dropImage, raindrop.x, raindrop.y);
+			game.batch.draw(dropImage, raindrop.x, raindrop.y);
 		}
-		batch.end();
+		game.batch.end();
 
 		// get the user touch
-		if(Gdx.input.isTouched()){
+		if(Gdx.input.isTouched() && TimeUtils.nanoTime() - startTime > 1000000000){
 			Vector3 touchPos = new Vector3();
 			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
 			camera.unproject(touchPos); // make the touchPos coordinate system to camera system
 			bucket.x = (int) (touchPos.x - 64 / 2);
 		}
+
+		// keybord movement
+		if(Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A))
+			bucket.x -= 400 * Gdx.graphics.getDeltaTime();
+		if(Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D))
+			bucket.x += 400 * Gdx.graphics.getDeltaTime();
 
 		// make sure the bucket stays between screen
 		if(bucket.x < 0) bucket.x = 0;
@@ -95,11 +113,43 @@ public class MyFirstGdxGame extends ApplicationAdapter {
 		for(Iterator<Rectangle> iter = raindrops.iterator(); iter.hasNext();){
 			Rectangle raindrop = iter.next();
 			raindrop.y -= 200 * Gdx.graphics.getDeltaTime(); // pixels per second
-			if (raindrop.y + 64 < 0) iter.remove();
+			if (raindrop.y + 64 < 0){
+				iter.remove();
+				health--;
+			}
 			if(raindrop.overlaps(bucket)){
+				dropsGathered++;
 				iter.remove();
 			}
 		}
+
+		if(health == 0) {
+			game.setScreen(new RestartScreen(game, TimeUtils.nanoTime()));
+		}
+	}
+
+	@Override
+	public void show() {
+
+	}
+
+	@Override
+	public void resize(int width, int height) {
+
+	}
+
+	@Override
+	public void pause() {
+
+	}
+
+	@Override
+	public void resume() {
+
+	}
+
+	@Override
+	public void hide() {
 
 	}
 
@@ -108,6 +158,5 @@ public class MyFirstGdxGame extends ApplicationAdapter {
 		//dispose of all natives resources
 		bucketImage.dispose();
 		dropImage.dispose();
-		batch.dispose();
 	}
 }

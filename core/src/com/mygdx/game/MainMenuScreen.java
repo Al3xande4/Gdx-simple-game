@@ -11,10 +11,16 @@ public class MainMenuScreen implements Screen {
     Drop game;
     OrthographicCamera camera;
 
+    int screenWight = 800;
+    int screenHeight = 480;
+
     public MainMenuScreen(Drop game){
         this.game = game;
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, 800, 480);
+
+        screenWight = Gdx.graphics.getWidth();
+        screenHeight = Gdx.graphics.getHeight();
+        camera.setToOrtho(false, screenWight, screenHeight);
     }
 
     @Override
@@ -22,8 +28,8 @@ public class MainMenuScreen implements Screen {
         ScreenUtils.clear(0f, 0f, .2f, 1f);
 
         game.batch.begin();
-        game.font.draw(game.batch, "Drop game", 280, 300);
-        game.font.draw(game.batch, "Tap to start the game", 250, 240);
+        game.font.draw(game.batch, "Drop game", screenWight / 2 - 4 * 5, screenHeight / 2 + 50);
+        game.font.draw(game.batch, "Tap to start the game", screenWight / 2 - 10 * 5, screenHeight / 2 - 50);
         game.batch.end();
 
         if (Gdx.input.isTouched()){
